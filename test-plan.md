@@ -1,73 +1,63 @@
-# Meta-RSI v9 Stage 7 — Test Plan (t_e78d3ecf)
+# Hermes AGI/ASI Harness — Test Plan (t_d62fcc6f)
 
-≥45 tests across 4 modules. All must pass.
+≥40 tests across control plane, safety, and Hermes integration. All must pass.
 
-## evolution_governance.py — 12 tests
-
-| # | Test | Assertion |
-|---|------|-----------|
-| EG.1 | Propose evolution | Proposal created with PROPOSED status |
-| EG.2 | Duplicate proposal rejected | ValueError on duplicate proposal_id |
-| EG.3 | Assign reviewer | Reviewer added, status → REVIEWING |
-| EG.4 | Approve with min approvals | Status → APPROVED after 2 approvals |
-| EG.5 | Reject proposal | Status → REJECTED, reason recorded |
-| EG.6 | Deploy approved | Status → DEPLOYED |
-| EG.7 | Deploy unapproved rejected | ValueError on deploying non-approved |
-| EG.8 | Rollback deployed | Status → ROLLED_BACK |
-| EG.9 | Rollback non-deployed rejected | ValueError on rolling back non-deployed |
-| EG.10 | Audit trail | All actions recorded in order |
-| EG.11 | Non-reviewer cannot approve | ValueError for unassigned reviewer |
-| EG.12 | Get status | Returns correct EvolutionStatus |
-
-## benchmark_contamination_defense.py — 11 tests
+## harness_control_plane.py — 15 tests
 
 | # | Test | Assertion |
 |---|------|-----------|
-| BC.1 | Register training data | DataSegment created with hash |
-| BC.2 | Register benchmark | DataSegment created with hash |
-| BC.3 | Check clean benchmark | ContaminationLevel.NONE |
-| BC.4 | Check contaminated benchmark | ContaminationLevel.HIGH/CRITICAL |
-| BC.5 | Validate integrity (clean) | Returns True |
-| BC.6 | Validate integrity (contaminated) | Returns False |
-| BC.7 | Get reports filtered | Returns only matching benchmark reports |
-| BC.8 | Similarity identical hashes | Returns 1.0 |
-| BC.9 | Similarity different hashes | Returns < 1.0 |
-| BC.10 | Classify contamination (0 matches) | NONE |
-| BC.11 | Classify contamination (many matches) | CRITICAL |
+| CP.1 | Initial state | State is INITIALIZING |
+| CP.2 | Initialize sets READY | After init, state = READY |
+| CP.3 | Submit task queued | Task added to queue |
+| CP.4 | Submit when not ready rejected | RuntimeError if not READY/RUNNING |
+| CP.5 | Execute task no plugin | Returns error "No plugin found" |
+| CP.6 | Register plugin | Plugin registered with metadata |
+| CP.7 | Register duplicate rejected | ValueError on duplicate |
+| CP.8 | Unregister plugin | Plugin removed |
+| CP.9 | Get plugin by name | Returns correct plugin |
+| CP.10 | Get by capability | Returns matching plugins |
+| CP.11 | Plugin registry checksum | Checksum computed |
+| CP.12 | Safety guard evaluate | SafetyReport returned |
+| CP.13 | CRITICAL task rejected | Violations include human approval |
+| CP.14 | Shutdown sets state | State = SHUTTING_DOWN then INITIALIZING |
+| CP.15 | Result stored | Result retrievable after execution |
 
-## self_experiment_manager.py — 12 tests
-
-| # | Test | Assertion |
-|---|------|-----------|
-| SE.1 | Design experiment | Experiment created with DESIGNED status |
-| SE.2 | Duplicate experiment rejected | ValueError on duplicate experiment_id |
-| SE.3 | Run experiment | Status → COMPLETED, result present |
-| SE.4 | Run non-designed rejected | ValueError on running non-designed |
-| SE.5 | Max concurrent rejected | RuntimeError when max concurrent reached |
-| SE.6 | Abort running | Status → ABORTED |
-| SE.7 | Abort non-running rejected | ValueError on aborting non-running |
-| SE.8 | Get experiment | Returns correct experiment |
-| SE.9 | Get results | Returns ExperimentResult |
-| SE.10 | List by status | Returns only matching experiments |
-| SE.11 | Capability probe result | success=True, capability_score present |
-| SE.12 | Safety boundary result | success=True, safety_score present |
-
-## control_group_enforcement.py — 10 tests
+## safety_plugin.py — 13 tests
 
 | # | Test | Assertion |
 |---|------|-----------|
-| CG.1 | Assign treatment | Subject created with treatment group |
-| CG.2 | Assign control | Subject created with control group |
-| CG.3 | Invalid group rejected | ValueError for non treatment/control |
-| CG.4 | Random assignment | Subjects split ~50/50 |
-| CG.5 | Check contamination (clean) | Status → INTACT |
-| CG.6 | Check contamination (overlap) | Status → CONTAMINATED |
-| CG.7 | Validate random assignment | Returns True for balanced split |
-| CG.8 | Validate (unbalanced) | Returns False for unbalanced |
-| CG.9 | Get subjects by group | Returns only matching subjects |
-| CG.10 | Selection bias score | Returns 0.0 for balanced, >0 for unbalanced |
+| SP.1 | Initialize | Plugin initialized |
+| SP.2 | Health check | Returns True when initialized |
+| SP.3 | Shutdown | Plugin shut down |
+| SP.4 | Precheck clean | No violations |
+| SP.5 | CRITICAL without human flag rejected | Violation reported |
+| SP.6 | Invalid timeout rejected | Violation reported |
+| SP.7 | Rate limit per-minute | Violations after limit |
+| SP.8 | Rate limit per-hour | Violations after limit |
+| SP.9 | Rate limit concurrent | Violations after limit |
+| SP.10 | Quota enforcement | Violations after quota |
+| SP.11 | Custom rule violation | Custom rule blocks task |
+| SP.12 | Anomaly detection | Z-score > threshold detected |
+| SP.13 | Anomaly recording | Anomalies retrievable |
 
-## Total: 45 tests (12 + 11 + 12 + 10)
+## hermes_integration.py — 12 tests
+
+| # | Test | Assertion |
+|---|------|-----------|
+| HI.1 | Initialize | Plugin initialized |
+| HI.2 | Detect profiles | Profiles detected from filesystem |
+| HI.3 | List profiles | Returns profile list |
+| HI.4 | Get profile | Returns correct profile |
+| HI.5 | Read memory (empty) | Returns empty list |
+| HI.6 | Write memory | Memory entry created |
+| HI.7 | Read memory (after write) | Returns written entry |
+| HI.8 | Register skill hook | Hook registered |
+| HI.9 | Hook skill task | Returns hooked skill name |
+| HI.10 | Gateway status | Returns status dict |
+| HI.11 | Shutdown | Plugin shut down |
+| HI.12 | Health check | Returns True when initialized |
+
+## Total: 40 tests (15 + 13 + 12)
 
 All tests runnable via `pytest`. Each module independently testable.
 
