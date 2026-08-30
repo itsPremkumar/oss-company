@@ -1,0 +1,67 @@
+{
+  "schema": "taskforge.monitoring/v1.1",
+  "max_running_tracks_per_avatar": 1,
+  "checks": [
+    {
+      "id": "repo_liveness",
+      "owner": "devops-engineer",
+      "cron": "0 */2 * * *",
+      "cadence_hours": 2,
+      "query": "commit on tracking/main older than 24h -> alert",
+      "escalation": "ceo"
+    },
+    {
+      "id": "avatar_load",
+      "owner": "qa-lead",
+      "cron": "0 1/2 * * *",
+      "cadence_hours": 2,
+      "query": "any avatar load(1/1) of running tracks for > 24h without pending handoff -> alert",
+      "escalation": "ceo"
+    },
+    {
+      "id": "avatar_overbook",
+      "owner": "qa-lead",
+      "cron": "continuous",
+      "cadence_hours": 0,
+      "query": "any avatar with >1 running track (load(2/1)+) -> alert:avatar_overbook",
+      "escalation": "ceo"
+    },
+    {
+      "id": "trace_link_integrity",
+      "owner": "qa-lead",
+      "cron": "0 */4 * * *",
+      "cadence_hours": 4,
+      "query": "committed deliverable with no upstream SHA/ref -> alert",
+      "escalation": "ceo"
+    },
+    {
+      "id": "escalation_selfcheck",
+      "owner": "qa-lead",
+      "cron": "0 */6 * * *",
+      "cadence_hours": 6,
+      "query": "CEO escalation trigger is itself green (no stuck escalation)",
+      "escalation": "ceo"
+    }
+  ],
+  "escalation": {
+    "recipients": ["ceo"],
+    "triggers": [
+      {"id": "repo_unreachable", "window_hours": 24, "reason": "SLA breach"},
+      {"id": "avatar_overload", "window_hours": 24, "reason": "track stall"},
+      {"id": "track_silent", "window_hours": 72, "reason": "silent deadlock"},
+      {"id": "dep_integrity", "reason": "artifact referenced but never committed"},
+      {"id": "avatar_overbook", "reason": "more than 1 running track per avatar"}
+    ],
+    "payload": {
+      "failing_check": "string",
+      "blocked_track": "string",
+      "upstream_ref": "string",
+      "last_progress_marker": "string"
+    }
+  },
+  "emit": {
+    "path": "/traces/monitoring/",
+    "format": "json",
+    "keyed_by": "run_id"
+  }
+}
